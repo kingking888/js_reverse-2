@@ -2,36 +2,119 @@ import base64
 from io import BytesIO
 from fontTools.ttLib import TTFont
 import requests
-import re
+import re,time
+import xml
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import xml.dom.minidom as xmldom
+from lxml import etree
+import requests
+total = []
+def get_text(i):
+    cookies = {
+        'footprints': 'eyJpdiI6IklMaHFLd28wVGRoajhYS0lBMVFSU2c9PSIsInZhbHVlIjoiSnhrRjZ3NnY1Y3QwK2tSbGxOeW1xYXRDXC9JMkhcL1B3WWxmQURRMEszU29kNUhXVzR3cHd4UXlhOUxFZGF3ckdJIiwibWFjIjoiYTQ1NjBiNGNiOWYwZTY5ZWI0OGQzMzU3MDkwOGUwNDEzMzczNjNkYmRhNmI5M2Y5NzBiYzlhOTFlYjJhMTAxYSJ9',
+        'Hm_lvt_020fbaad6104bcddd1db12d6b78812f6': '1586762129,1586764255,1586840738,1586921470',
+        '_ga': 'GA1.2.1418418863.1586921470',
+        '_gid': 'GA1.2.811575715.1586921470',
+        'XSRF-TOKEN': 'eyJpdiI6InR4Zll1K1k4MWhZa250N3F6MjNrZ1E9PSIsInZhbHVlIjoiVlZ5SmxSQ2hncDFLQlE4REVvNzlneTUwUlk2Zmg5aUxMOE0rQXY3MFBZMWhhOFp2c2xPaFJlYTA5NVoyN3QweSIsIm1hYyI6ImUzOWI2YTdjYmI0OGUyYTJhOTgxNGRjZTZkMDMwZTk5OTllNGQyMTVlZDQzODE0ZDBkNzdlYmI2Zjk0YmMzOWQifQ%3D%3D',
+        'glidedsky_session': 'eyJpdiI6IjlGU1NldzZBTTFuY24xcE5GYWJKYkE9PSIsInZhbHVlIjoiK2l5RkRUaTRJUFVTK1B6NW5kTTErS3MrcFQya3JRTEV1b3E4VmQxcUV5N0RWeFR6K0QraVV1bXBtV0NJMXJRSiIsIm1hYyI6Ijk4ZGVjYmQ3MjViNmFlY2QwYzczNDc2MjlkNWI5MGFlMjYyZDk4NTY5YjVmYjA3ZWY0MzljMGY4NDNhNjE1NzMifQ%3D%3D',
+        'Hm_lpvt_020fbaad6104bcddd1db12d6b78812f6': '1586921501',
+    }
+    headers = {
+        'Connection': 'keep-alive',
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'Referer': 'http://glidedsky.com/rank',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.9',
+    }
+    url = f'http://glidedsky.com/level/web/crawler-font-puzzle-1?page={i}'
+    res = requests.get(url, headers=headers, cookies=cookies, verify=False)
+    create_file(res.text,url)
 
-# 正则获取字体文件内容
-url = 'http://glidedsky.com/level/web/crawler-font-puzzle-1?page=6'
-res = requests.get(url)
-base64Str = re.findall("charset=utf-8;base64,(.*?)'\)", res.text)[0]
-# 直接从网页源代码拷贝字体文件内容
-# base64Str = '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'
-# base64解码  base64.decodebytes()可处理str类型
-binData = base64.decodebytes(base64Str.encode())
-# 写入otf字体文件
-filePath01 = r'test.ttf'
-filePath02 = r'F://data_temp/text_20190402_03.xml'
-with open(filePath01, 'wb') as f:
-    f.write(binData)
-    f.close()
-# 解析字体库
-font01 = TTFont(filePath01)
-# BytesIO() 把二进制数据bin_data当作文件来操作,TTFont接收一个文件类型
-# font01 = TTFont(BytesIO(binData))
-uniList = font01['cmap'].tables[0].ttFont.getGlyphOrder()
-utfList = font01['cmap'].tables[0].ttFont.tables['cmap'].tables[0].cmap  # c = font.getBestCmap()
-retList = []
-getText = '麣龒鸺驋龒鑶鑶麣龥龤龤'
-for i in getText:
-    # ord()以字符作为参数，返回对应的Unicode数值
-    if ord(i) in utfList:
-        text = int(utfList[ord(i)][-2:]) - 1
-    else:
-        text = i
-    retList.append(text)
-crackText = ''.join([str(i) for i in retList])
-print(crackText)
+
+
+def create_file(text,url):
+    base64Str = re.findall(r'font;charset=utf-8;base64,(.*?)format', text.replace("\n", "").replace(" ", ""))[0]
+    binData = base64.decodebytes(base64Str.encode())
+    # 写入ttf字体文件
+    filePath01 = r'test.ttf'
+    with open(filePath01, 'wb') as f:
+        f.write(binData)
+        f.close()
+    # 解析字体库
+    try:
+        font01 = TTFont(filePath01)
+        font01.saveXML('test.ttf.xml')
+    except:
+        print(url, base64Str)
+
+    replace_text(text)
+
+
+def replace_text(text):
+    dict = {
+        'zero': '0',
+        'one': '1',
+        'two': '2',
+        'three': '3',
+        'four': '4',
+        'five': '5',
+        'six': '6',
+        'seven': '7',
+        'eight': '8',
+        'nine': '9',
+    }
+    newdict = {}
+    dom = xmldom.parse('test.ttf.xml')
+    root = dom.documentElement
+    bb = root.getElementsByTagName('GlyphID')
+    for j in range(1, 11):
+        # 下标从 1 开始，获取的是zero,
+        k = bb[j].getAttribute("name")
+        # 在字体文件 xml 中对应关系就是 j-1, 也就是0， zero对应的就是0，注释仅针对第一个字体文件
+        # 建立对应关系，取出真实的 name 对应的数字。
+        newdict[dict[k]] = str(j - 1)
+    html = etree.HTML(text)
+    result_li = html.xpath('//*[@id="app"]/main/div[1]/div/div/div/div//text()')
+    result_li = [str(x).replace(' ',"").replace("\n","") for x in result_li]
+    result_res = []
+    for index, a in enumerate(result_li):
+        temp = list(a)
+        for index, b in enumerate(a):
+            temp[index] = newdict[b]
+        result_res.append("".join(temp))
+    print(result_res)
+    total.append(result_res)
+
+# for i in range(1,10):
+#     get_text(i)
+# # print(sum(total_list))
+
+
+# with ThreadPoolExecutor(max_workers=18) as t:
+#     obj_list = []
+#     begin = time.time()
+#     for page in range(1, 15):
+#         obj = t.submit(get_text, page)
+#         obj_list.append(obj)
+#
+#     for future in as_completed(obj_list):
+#         data = future.result()
+#         print(data)
+#         print('*' * 50)
+#     times = time.time() - begin
+#     print(times)
+for page in range(1, 1001):
+    get_text(page)
+
+start = time.perf_counter()
+sum_list = [_ for c in total for _ in c]
+sum_list = [int(x) for x in sum_list]
+print('total', len(total))
+print('total_list', len(sum_list))
+print('total_sum', sum(sum_list))
+print("total_time", time.perf_counter()-start)
+
