@@ -50,4 +50,5 @@ traverse(ast,{
 // console.log(code1);
 
 let code = generator(ast).code;
+code = code.replace(/\\\\x/g,"\\x")
 fs.writeFile('./demoNew.js', code, (err)=>{});
