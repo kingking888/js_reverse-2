@@ -294,6 +294,7 @@ function main(){
 	code = generator(ast).code;
 	//混淆的代码中，如果有十六进制字符串加密，ast转成代码以后会有多余的转义字符，需要替换掉
 	code = code.replace(/\\\\x/g, '\\x');
-	console.log(code);
+	// console.log(code);
+	fs.writeFile('./demoNew.js', code, (err)=>{});
 }
 main();

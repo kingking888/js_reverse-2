@@ -27,7 +27,7 @@ function generatorIdentifier(decNum){
 function renameOwnBinding(path) {
     let OwnBindingObj = {}, globalBindingObj = {}, i = 0;
     path.traverse({
-        Identifier(p)  {
+        Identifier(p) {
             let name = p.node.name;
             let binding = p.scope.getOwnBinding(name);
             binding && generator(binding.scope.block).code == path + '' ?

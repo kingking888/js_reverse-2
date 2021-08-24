@@ -11,7 +11,9 @@ let ast = parser.parse(jscode);
 
 traverse(ast, {
     FunctionDeclaration(path) {
-        console.log(generator(path.scope.block).code);
+        let array = path.scope.generateUidIdentifier('array');
+
+        console.log(array);
     }
 });
 

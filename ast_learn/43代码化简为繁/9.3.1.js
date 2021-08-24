@@ -16,6 +16,7 @@ traverse(ast, {
 		let right = path.node.right;
 		let a = t.identifier('a');
 		let b = t.identifier('b');
+		// // 创建一个上下文中新的引用 生成类似于{ type: 'Identifier', name: '_n2' }
 		let funcNameIdentifier = path.scope.generateUidIdentifier('xxx');
 		let func = t.functionDeclaration(
 			funcNameIdentifier, 

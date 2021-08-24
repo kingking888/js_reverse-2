@@ -10,13 +10,13 @@ const jscode = fs.readFileSync("./demo.js", {
 let ast = parser.parse(jscode);
 
 function renameOwnBinding(path) {
-    let OwnBindingObj = {}, globalBindingObj = {}, i = 0;
+    let OwnBindingObj = {}, globalBindingObj = {}, i = 5;
     path.traverse({
         Identifier(p) {
             let name = p.node.name;
+            console.log("name>>>", name)
             let binding = p.scope.getOwnBinding(name);
-            binding && generator(binding.scope.block).code == path + '' ?
-            (OwnBindingObj[name] = binding) : (globalBindingObj[name] = 1);
+            binding && generator(binding.scope.block).code == path + '' ? (OwnBindingObj[name] = binding) : (globalBindingObj[name] = 1);
         }
     });
     for(let oldName in OwnBindingObj) {
@@ -30,6 +30,9 @@ traverse(ast, {
     'Program|FunctionExpression|FunctionDeclaration'(path) {
         renameOwnBinding(path);
     }
+    // 'Program'(path) {
+    //     renameOwnBinding(path);
+    // }
 });
 
 let code = generator(ast).code;
